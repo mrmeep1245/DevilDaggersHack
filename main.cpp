@@ -43,7 +43,8 @@ auto main() -> int
 					<< "GEMS (address): " << addresses.gem_address << '\n'
 					<< "POINTS (address): " << addresses.points_address << '\n'
 					<< "TIMER (address): " << addresses.timer_address << '\n'
-					<< "KILLS (address): " << addresses.kills_address << '\n';
+					<< "KILLS (address): " << addresses.kills_address << '\n'
+					<< dec;
 
 		cout << "Press F2 to add gems\n"
 				"Press F3 to add points\n"
@@ -73,12 +74,13 @@ auto main() -> int
 			//add kills
 			if ((GetKeyState(VK_F4) & 0x8000))
 			{
-				DWORD val = 0xffffff;
-				if (WriteProcessMemory(proc, (void*)addresses.kills_address, &val, sizeof(val), NULL))
+				DWORD kills_value = 0;
+				ReadProcessMemory(proc, (void*)addresses.kills_address, &kills_value, sizeof(kills_value), NULL); // reading kill count value
+				kills_value += 100; // increasing kill count value
+				if (WriteProcessMemory(proc, (void*)addresses.kills_address, &kills_value, sizeof(kills_value), NULL))
 				{
-					cout << "Kill count increased\n";
+					cout << "Kill count increased. New value: " << kills_value << '\n';
 				}
-				ReadProcessMemory(proc, (void*)addresses.kills_address, &val, sizeof(val), NULL);
 			}
 			//increase timer
 			if ((GetKeyState(VK_F5) & 0x8000))
@@ -91,10 +93,8 @@ auto main() -> int
 					cout << "Timer value increased\n";
 				}
 			}
-
 			Sleep(100);
 		}
 	}
-
 	return 0;
 }
