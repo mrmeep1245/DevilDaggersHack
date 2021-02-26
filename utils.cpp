@@ -2,27 +2,6 @@
 
 namespace utils
 {
-	std::string xor_string(const std::string& str)
-	{
-		char vals[] = { '\r', '\n', 3, 5, 6, 7, 8 };
-		int val_i = 0;
-		auto inc_i = [&vals](int& i) -> void
-		{
-			++i;
-			if (i == sizeof(vals))
-			{
-				i = 0;
-			}
-		};
-		std::string res;
-		for (const auto& i : str)
-		{
-			res += i ^ vals[val_i];
-			inc_i(val_i);
-		}
-		return res;
-	}
-
 	DWORD get_process_by_name(const wchar_t* procName)
 	{
 		HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);		

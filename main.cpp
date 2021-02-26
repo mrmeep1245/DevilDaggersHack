@@ -1,31 +1,21 @@
 #include <iostream>
-#include <fstream>
-#include <vector>
-#include <string>
-#include <algorithm>
 #include <windows.h>
-#include <bitset>
 #include <TlHelp32.h>
 #include "utils.h"
 using namespace std;
 
-uintptr_t base = 0xFF774D87090;
-
 struct game_addresses
 {
 	uintptr_t gem_address;
-	uintptr_t points_address;
-	uintptr_t anti_cheat_address;
+	uintptr_t points_address;	
+	uintptr_t kills_address;
+	uintptr_t timer_address;
 };
 
 auto main() -> int
 {
 	DWORD procId = utils::get_process_by_name(L"dd.exe");
 	HANDLE proc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, procId);
-
-	char anti_cheat_opcode_bac = 0x74;
-	char anti_cheat_opcode_bypass = 0xEB;
-	bool anti_cheat_disabled = false;
 
 	if (!proc)
 	{
@@ -38,9 +28,12 @@ auto main() -> int
 		uintptr_t base_addr = utils::get_module_base_address(procId, L"dd.exe");
 		addresses.gem_address = base_addr + 0x221340;
 		addresses.points_address = base_addr + 0x2214C0;
-
+		addresses.kills_address = base_addr + 0x226BD0;
+		addresses.timer_address = base_addr + 0x226BD0;
+		
 		//gems
 		DWORD gems_count = 0;
+
 		uintptr_t new_address;
 		if (ReadProcessMemory(proc, (void*)addresses.gem_address, &new_address, sizeof(new_address), NULL))
 		{
@@ -70,18 +63,30 @@ auto main() -> int
 			}
 		}
 
-		cout << hex << "BASE: " << base_addr << '\n';
-		cout << "GEMS (address): " << addresses.gem_address << '\n'
-			<< "POINTS (address): " << addresses.points_address << '\n'
-			<< "GEMS (count): " << gems_count << '\n'
-			<< "POINTS (count): " << points_count << '\n';
+		if (ReadProcessMemory(proc, (void*)addresses.kills_address, &new_address, sizeof(new_address), NULL))
+		{
+			addresses.kills_address = new_address + 0x340;
+		}
+
+		if (ReadProcessMemory(proc, (void*)addresses.timer_address, &new_address, sizeof(new_address), NULL))
+		{
+			addresses.timer_address = new_address + 0x32C;
+		}
+
+		cout << hex << "BASE: " << base_addr << '\n'
+					<< "GEMS (address): " << addresses.gem_address << '\n'
+					<< "POINTS (address): " << addresses.points_address << '\n'
+					<< "TIMER (address): " << addresses.timer_address << '\n'
+					<< "KILLS (address): " << addresses.kills_address << '\n';
 
 		cout << "Press F2 to add gems\n"
-			"Press F3 to add points\n"
-			"Press F6 to disable cheking for cheats\n";
+				"Press F3 to add points\n"
+				"Press F4 to add kills\n"
+				"Press F5 to increase timer\n";
 
 		while (true)
 		{
+			//add gems
 			if ((GetKeyState(VK_F2) & 0x8000))
 			{
 				DWORD val = 0xffffff;
@@ -90,6 +95,7 @@ auto main() -> int
 					cout << "Gems amount set\n";
 				}
 			}
+			//add points
 			if ((GetKeyState(VK_F3) & 0x8000))
 			{
 				DWORD val = 0xffffff;
@@ -98,27 +104,28 @@ auto main() -> int
 					cout << "Points amount set\n";
 				}
 			}
+			//add kills
+			if ((GetKeyState(VK_F4) & 0x8000))
+			{
+				DWORD val = 0xffffff;
+				if (WriteProcessMemory(proc, (void*)addresses.kills_address, &val, sizeof(val), NULL))
+				{
+					cout << "Kill count increased\n";
+				}
+				ReadProcessMemory(proc, (void*)addresses.kills_address, &val, sizeof(val), NULL);
+			}
+			//increase timer
+			if ((GetKeyState(VK_F5) & 0x8000))
+			{
+				float timer_value = 0;
+				ReadProcessMemory(proc, (void*)addresses.timer_address, &timer_value, sizeof(timer_value), NULL); // reading timer value
+				timer_value += 100.0;
+				if (WriteProcessMemory(proc, (void*)addresses.timer_address, &timer_value, sizeof(timer_value), NULL))
+				{
+					cout << "Timer value increased\n";
+				}
+			}
 
-			//if ((GetKeyState(VK_F6) & 0x8000))
-			//{
-			//	if (anti_cheat_disabled)
-			//	{
-			//		anti_cheat_disabled = false;
-			//		if (WriteProcessMemory(proc, (void*)addresses.anti_cheat_address, &anti_cheat_opcode_bac, sizeof(anti_cheat_opcode_bac), NULL))
-			//		{
-			//			cout << "Anti-cheat enabled\n";
-			//		}
-			//	}
-			//	else
-			//	{
-			//		anti_cheat_disabled = true;
-			//		if (WriteProcessMemory(proc, (void*)addresses.anti_cheat_address, &anti_cheat_opcode_bypass, sizeof(anti_cheat_opcode_bypass), NULL))
-			//		{
-			//			cout << "Anti-cheat disabled\n";
-			//		}
-			//	}
-
-			//}
 			Sleep(100);
 		}
 	}
