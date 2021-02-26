@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <TlHelp32.h>
 #include "utils.h"
+
 using namespace std;
 
 struct game_addresses
@@ -31,47 +32,12 @@ auto main() -> int
 		addresses.kills_address = base_addr + 0x226BD0;
 		addresses.timer_address = base_addr + 0x226BD0;
 		
-		//gems
-		DWORD gems_count = 0;
-
 		uintptr_t new_address;
-		if (ReadProcessMemory(proc, (void*)addresses.gem_address, &new_address, sizeof(new_address), NULL))
-		{
-			addresses.gem_address = new_address;
-			if (ReadProcessMemory(proc, (void*)addresses.gem_address, &new_address, sizeof(new_address), NULL))
-			{
-				addresses.gem_address = new_address;
-				addresses.gem_address += 0x60;
-				if (ReadProcessMemory(proc, (void*)addresses.gem_address, &new_address, sizeof(new_address), NULL))
-				{
-					addresses.gem_address = new_address;
-					addresses.gem_address += 0x354;
-					ReadProcessMemory(proc, (void*)addresses.gem_address, &gems_count, sizeof(gems_count), NULL);
-				}
-			}
-		}
 
-		DWORD points_count = 0;
-		if (ReadProcessMemory(proc, (void*)addresses.points_address, &new_address, sizeof(new_address), NULL))
-		{
-			addresses.points_address = new_address;
-			if (ReadProcessMemory(proc, (void*)addresses.points_address, &new_address, sizeof(new_address), NULL))
-			{
-				addresses.points_address = new_address;
-				addresses.points_address += 0x360;
-				ReadProcessMemory(proc, (void*)addresses.points_address, &points_count, sizeof(points_count), NULL);
-			}
-		}
-
-		if (ReadProcessMemory(proc, (void*)addresses.kills_address, &new_address, sizeof(new_address), NULL))
-		{
-			addresses.kills_address = new_address + 0x340;
-		}
-
-		if (ReadProcessMemory(proc, (void*)addresses.timer_address, &new_address, sizeof(new_address), NULL))
-		{
-			addresses.timer_address = new_address + 0x32C;
-		}
+		addresses.gem_address = utils::read_memory_offsets(proc, addresses.gem_address, 0x0ull, 0x60ull, 0x354ull);
+		addresses.points_address = utils::read_memory_offsets(proc, addresses.points_address,0x0ull, 0x360ull);
+		addresses.kills_address = utils::read_memory_offsets(proc, addresses.kills_address, 0x340ull);
+		addresses.timer_address = utils::read_memory_offsets(proc, addresses.timer_address, 0x32Cull);
 
 		cout << hex << "BASE: " << base_addr << '\n'
 					<< "GEMS (address): " << addresses.gem_address << '\n'
