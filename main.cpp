@@ -1,6 +1,5 @@
 #include <iostream>
 #include <windows.h>
-#include <TlHelp32.h>
 #include "utils.h"
 
 using namespace std;
